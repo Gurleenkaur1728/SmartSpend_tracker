@@ -1,32 +1,34 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSession } from './auth';
 
-const STORAGE_KEY = 'transactions';
-
-export const saveTransaction = async (transaction: any) => {
-  try {
-    const existing = await AsyncStorage.getItem(STORAGE_KEY);
-    const data = existing ? JSON.parse(existing) : [];
-    data.unshift(transaction); // add new at the top
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch (error) {
-    console.error('Error saving transaction:', error);
-  }
+export type Transaction = {
+  id: string;
+  type: 'income' | 'expense';
+  amount: number;
+  category: string;
+  description?: string;
+  method?: string;
+  date: string; // ISO
 };
 
-export const getTransactions = async () => {
-  try {
-    const data = await AsyncStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
-  } catch (error) {
-    console.error('Error loading transactions:', error);
-    return [];
-  }
+// key is scoped to the logged-in email
+const keyFor = (email: string | null) => `ss_transactions_${email ?? 'anon'}`;
+
+export const getTransactions = async (): Promise<Transaction[]> => {
+  const email = await getSession();
+  const raw = await AsyncStorage.getItem(keyFor(email));
+  try { return raw ? (JSON.parse(raw) as Transaction[]) : []; }
+  catch { return []; }
+};
+
+export const saveTransaction = async (tx: Transaction) => {
+  const email = await getSession();
+  const list = await getTransactions();
+  list.unshift(tx);
+  await AsyncStorage.setItem(keyFor(email), JSON.stringify(list));
 };
 
 export const clearTransactions = async () => {
-  try {
-    await AsyncStorage.removeItem(STORAGE_KEY);
-  } catch (error) {
-    console.error('Error clearing data:', error);
-  }
+  const email = await getSession();
+  await AsyncStorage.removeItem(keyFor(email));
 };

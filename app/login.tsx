@@ -1,87 +1,74 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, SafeAreaView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { findUser, setLoggedIn } from './utils/auth';
+import { StyleSheet } from 'react-native';
 
-export default function LoginScreen() {
+export default function Login() {
   const router = useRouter();
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Please enter email and password');
-      return;
-    }
-
-    const saved = await AsyncStorage.getItem('user');
-    if (!saved) {
-      Alert.alert('No account found. Please sign up first.');
-      return;
-    }
-
-    const user = JSON.parse(saved);
-    if (email === user.email && password === user.password) {
-      router.replace('/home');
-    } else {
-      Alert.alert('Incorrect credentials');
-    }
+  const onLogin = async () => {
+  
+    const saved = await findUser(email.trim());
+if (!saved || saved.password !== password) { /* show error */ return; }
+await setLoggedIn(saved.email);
+    router.replace('/(tabs)/home');
   };
 
   return (
-    <View style={{ flex: 1, justifyContent: 'center', padding: 20 }}>
-      <Text style={{ fontSize: 28, fontWeight: 'bold', marginBottom: 24 }}>SmartSpend Login</Text>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+      <View style={{ flex: 1, padding: 24, justifyContent: 'center' }}>
+        <View style={{ alignItems: 'center', marginBottom: 28 }}>
+          <Image
+            source={require('../assets/images/Smartspend-logo.png')}
+            style={{ width: 300, height: 120, resizeMode: 'contain' }}
+          />
+        </View>
 
-      <Text style={{ marginBottom: 6 }}>Email</Text>
-      <TextInput
-        placeholder="example@email.com"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-        style={{
-          borderWidth: 1,
-          borderColor: '#D1D5DB',
-          borderRadius: 8,
-          padding: 12,
-          marginBottom: 16,
-        }}
-      />
+        <Text style={{ fontSize: 22, fontWeight: '700', marginBottom: 16 }}>Welcome back</Text>
 
-      <Text style={{ marginBottom: 6 }}>Password</Text>
-      <TextInput
-        placeholder="••••••••"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        style={{
-          borderWidth: 1,
-          borderColor: '#D1D5DB',
-          borderRadius: 8,
-          padding: 12,
-          marginBottom: 24,
-        }}
-      />
+        <TextInput placeholder="Email" value={email} onChangeText={setEmail}
+          autoCapitalize="none" keyboardType="email-address" style={styles.input} />
+        <TextInput placeholder="Password" value={password} onChangeText={setPassword}
+          secureTextEntry style={styles.input} />
 
-      <TouchableOpacity
-        onPress={handleLogin}
-        style={{
-          backgroundColor: '#10B981',
-          padding: 16,
-          borderRadius: 8,
-          alignItems: 'center',
-        }}
-      >
-        <Text style={{ color: '#fff', fontWeight: 'bold' }}>Sign In</Text>
-      </TouchableOpacity>
+        <TouchableOpacity onPress={onLogin} style={styles.primaryBtn}>
+          <Text style={styles.primaryText}>Sign In</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        onPress={() => router.push('/signup')}
-        style={{ marginTop: 16, alignItems: 'center' }}
-      >
-        <Text style={{ color: '#10B981' }}>Do not have an account? Sign up</Text>
-      </TouchableOpacity>
-    </View>
+        <TouchableOpacity onPress={() => router.replace('/signup')} style={{ marginTop: 14, alignItems: 'center' }}>
+          <Text style={{ color: '#0ea5e9' }}>Create an account</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  input: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+  },
+  primaryBtn: {
+  backgroundColor: '#10b981',
+  padding: 16,
+  borderRadius: 10,
+  alignItems: 'center',
+  marginTop: 6,
+  shadowColor: '#000',
+  shadowOpacity: 0.08,
+  shadowRadius: 6,
+  shadowOffset: { width: 0, height: 2 },
+  elevation: 2,
+  },
+  primaryText: {
+    color: '#fff',
+    fontWeight: '700',
+  },
+});
+
